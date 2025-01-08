@@ -17,7 +17,7 @@ type TodoItem struct {
 }
 
 func main() {
-	fmt.Println("Hello, World!")
+
 	now := time.Now().UTC()
 	item := TodoItem{
 		Id:          1,
