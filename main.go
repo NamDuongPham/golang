@@ -1,10 +1,16 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 type TodoItem struct {
@@ -18,7 +24,13 @@ type TodoItem struct {
 }
 
 func main() {
-
+	godotenv.Load()
+	dsn := os.Getenv("DATABASE_URL")
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatal("failed to connect database")
+	}
+	fmt.Println(db)
 	now := time.Now().UTC()
 	item := TodoItem{
 		Id:          1,
@@ -51,4 +63,5 @@ func main() {
 		})
 	})
 	r.Run()
+
 }
