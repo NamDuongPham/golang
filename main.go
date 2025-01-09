@@ -29,11 +29,19 @@ type TodoItemCreate struct {
 	Description string `json:"description" gorm:"column:description"`
 	Status      string `json:"status" gorm:"column:status"`
 }
+type TodoItemUpdate struct {
+	Title       *string `json:"title" gorm:"column:title"`
+	Description *string `json:"description" gorm:"column:description"`
+	Status      *string `json:"status" gorm:"column:status"`
+}
 
 func (TodoItem) TableName() string {
 	return "todo_items"
 }
 func (TodoItemCreate) TableName() string {
+	return TodoItem{}.TableName()
+}
+func (TodoItemUpdate) TableName() string {
 	return TodoItem{}.TableName()
 }
 func main() {
@@ -77,7 +85,7 @@ func main() {
 			items.POST("", CreateItem(db))
 			items.GET("")
 			items.GET("/:id", GetDetailItem(db))
-			items.PATCH("/:id")
+			items.PATCH("/:id", UpdateItem(db))
 			items.DELETE("/:id")
 		}
 	}
@@ -108,5 +116,21 @@ func GetDetailItem(db *gorm.DB) func(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": data})
+	}
+}
+func UpdateItem(db *gorm.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		var data TodoItemUpdate
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if err := db.Where("id = ?", id).Updates(&data).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": true})
 	}
 }
