@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,14 +15,53 @@ import (
 	"gorm.io/gorm"
 )
 
+type ItemStatus int
+
+const (
+	ItemStatusDoing ItemStatus = iota
+	ItemStatusDone
+	ItemStatusDelete
+)
+
+var allItemStatuses = [3]string{"Doing", "Done", "Delete"}
+
+func (item ItemStatus) String() string {
+	return allItemStatuses[item]
+}
+func parseStr2ItemStatus(s string) (ItemStatus, error) {
+	for i := range allItemStatuses {
+		if allItemStatuses[i] == s {
+			return ItemStatus(i), nil
+		}
+	}
+	return ItemStatus(0), errors.New("invalid item status")
+}
+func (item *ItemStatus) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to scan item status: %v", value)
+	}
+
+	v, err := parseStr2ItemStatus(string(bytes))
+	if err != nil {
+		return fmt.Errorf("failed to scan item status: %v", value)
+	}
+	*item = v
+	return nil
+
+}
+func (item *ItemStatus) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", item.String())), nil
+}
+
 type TodoItem struct {
 	Id    int    `json:"id" gorm:"column:id"`
 	Title string `json:"title" gorm:"column:title"`
 	// Image string `json:"image"`
-	Description string     `json:"description" gorm:"column:description"`
-	Status      string     `json:"status" gorm:"column:status"`
-	CreatedAt   *time.Time `json:"created_at" gorm:"column:created_at"`
-	UpdatedAt   *time.Time `json:"updated_at,omitempty" gorm:"column:updated_at"`
+	Description string      `json:"description" gorm:"column:description"`
+	Status      *ItemStatus `json:"status" gorm:"column:status"`
+	CreatedAt   *time.Time  `json:"created_at" gorm:"column:created_at"`
+	UpdatedAt   *time.Time  `json:"updated_at,omitempty" gorm:"column:updated_at"`
 }
 type TodoItemCreate struct {
 	Id          int    `json:"-" gorm:"column:id"`
